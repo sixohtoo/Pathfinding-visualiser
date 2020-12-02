@@ -4,6 +4,7 @@ import pygame
 import math
 from queue import PriorityQueue
 import time
+import random
 
 DRAW = 1
 IMMEDIATE = 1
@@ -62,6 +63,9 @@ class Node:
 
     def is_end(self):
         return self.colour == LIGHT_BLUE
+
+    def is_path(self):
+        return self.colour == WHITE
 
     def reset(self):
         self.colour = WHITE
@@ -276,6 +280,48 @@ def get_clicked_position(pos, rows, width):
     col = x // gap
     return row, col
 
+def init_maze(grid, start):
+    for row in grid:
+        for spot in row:
+            if spot != start:
+                spot.make_barrier()
+
+def add_frontiers(frontiers, frontiers_set, cell, grid):
+    directions = [(2, 0), (0, 2), (-2, 0), (0, -2)]
+    row, col = cell.row, cell.col
+    for y, x in directions:
+        if 0 < row + y < len(grid) - 1 and 0 < col + x < len(grid) - 2:
+            if grid[row + y][col + x].is_barrier() and grid[row + y][col + x] not in frontiers_set:
+                frontiers.append(grid[row + y][col + x])
+                frontiers_set.add(grid[row + y][col + x])
+
+
+def add_connecting_path(cell, grid):
+    directions = [(2, 0), (0, 2), (-2, 0), (0, -2)]
+    neighbours = []
+    row, col = cell.row, cell.col
+    for y, x in directions:
+        if 0 < row + y < len(grid) - 1 and 0 < col + x < len(grid) - 1:
+            if grid[row + y][col + x].is_path() or grid[row + y][col + x].is_start():
+                neighbours.append(grid[row + y][col + x])
+    connector = neighbours.pop(random.randrange(len(neighbours)))
+    con_row, con_col = connector.row, connector.col
+    grid[(row + con_row) // 2][(col + con_col) // 2].reset()
+
+
+def generate_maze(draw, grid, start):
+    frontiers = []
+    frontiers_set = set()
+    add_frontiers(frontiers, frontiers_set, start, grid)
+    while frontiers:
+        draw()
+        #time.sleep(0.5)
+        cell = frontiers.pop(random.randrange(len(frontiers)))
+        cell.reset()
+        add_frontiers(frontiers, frontiers_set, cell, grid)
+        add_connecting_path(cell, grid)
+
+
 
 def main(win, width):
     global ALGORITHM
@@ -326,11 +372,15 @@ def main(win, width):
                 for row in grid:
                     for spot in row:
                         spot.update_neighbours(grid)
-                #global ALGORITHM
                 if ALGORITHM == ASTAR:
                     astar(lambda: draw(win, grid, ROWS, width), grid, start, end, win)
                 else:
                     dijkstra(lambda: draw(win, grid, ROWS, width), grid, start, end)
+
+            elif event.key == pygame.K_m and start:
+                end = None
+                init_maze(grid, start)
+                generate_maze(lambda: draw(win, grid, ROWS, width), grid, start)
 
             elif event.key == pygame.K_c:
                 start = None
