@@ -14,7 +14,7 @@ which acts as barriers for the pathfinding algorithm.
 2 different reset options for the board.
 
 # Controls
-run `python3 astar.py` to open program (Name is now inaccurate - I will change this).
+run `python3 visualiser.py` 
 
 **Left click** on any square in the grid to place the 'Starting Node'.
 
